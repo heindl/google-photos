@@ -2,10 +2,10 @@ package googlephotos
 
 import (
 	"github.com/go-errors/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/go-playground/validator.v9"
 	"sync"
-	"github.com/sirupsen/logrus"
 )
 
 type Params struct {
@@ -28,7 +28,7 @@ type mediaSet struct {
 	m map[string]*Media
 }
 
-func (Ω *mediaSet) Add(media *PhotoLibraryMedia, album *Album, category *Category) {
+func (Ω *mediaSet) add(media *PhotoLibraryMedia, album *Album, category *Category) {
 	Ω.Lock()
 	defer Ω.Unlock()
 	if _, ok := Ω.m[media.ID]; !ok {
@@ -42,7 +42,7 @@ func (Ω *mediaSet) Add(media *PhotoLibraryMedia, album *Album, category *Catego
 	Ω.m[media.ID].Categories = Ω.m[media.ID].Categories.addToSet(category)
 }
 
-func (Ω *mediaSet) ToSlice(requireAlbum bool) (res []*Media) {
+func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Media) {
 	for _, v := range Ω.m {
 		if requireAlbum && len(v.Albums) == 0 {
 			continue
@@ -52,7 +52,8 @@ func (Ω *mediaSet) ToSlice(requireAlbum bool) (res []*Media) {
 	return
 }
 
-func List(params Params) ([]*Media, error) {
+// FetchList returns a list of images from Google Photos.
+func FetchList(params Params) ([]*Media, error) {
 	if err := validate.Struct(params); err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
@@ -78,14 +79,14 @@ func List(params Params) ([]*Media, error) {
 
 				logrus.WithFields(logrus.Fields{
 					"mediaItems": len(items),
-					"album": album.Title,
+					"album":      album.Title,
 				}).Infof("Received media items for album")
 
 				if err != nil {
 					return err
 				}
 				for _, item := range items {
-					media.Add(item, album, nil)
+					media.add(item, album, nil)
 				}
 				return nil
 			})
@@ -103,13 +104,13 @@ func List(params Params) ([]*Media, error) {
 				})
 				logrus.WithFields(logrus.Fields{
 					"mediaItems": len(items),
-					"category": category,
+					"category":   category,
 				}).Infof("Received media items for category")
 				if err != nil {
 					return err
 				}
 				for _, item := range items {
-					media.Add(item, nil, &category)
+					media.add(item, nil, &category)
 				}
 				return nil
 			})
@@ -121,6 +122,6 @@ func List(params Params) ([]*Media, error) {
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	return media.ToSlice(len(params.AlbumTitles) > 0), nil
+	return media.toSlice(len(params.AlbumTitles) > 0), nil
 
 }

@@ -29,15 +29,15 @@ type ymd struct {
 	Day   string `json:"day,omitempty"`
 }
 
-type filters struct{
+type filters struct {
 	ContentFilter *contentFilter `json:"contentFilter,omitempty"`
 	DateFilter    *dateFilter    `json:"dateFilter,omitempty"`
 }
 
 type query struct {
-	AlbumId string `json:"albumId,omitempty"`
-	Filters *filters `json:"filters,omitempty"`
-	PageToken string `json:"pageToken,omitempty"`
+	AlbumId   string   `json:"albumId,omitempty"`
+	Filters   *filters `json:"filters,omitempty"`
+	PageToken string   `json:"pageToken,omitempty"`
 }
 
 func safeClose(c io.Closer, err *error) {
@@ -49,6 +49,7 @@ func safeClose(c io.Closer, err *error) {
 const endpointAlbumList = "https://photoslibrary.googleapis.com/v1/albums"
 const endpointMediaItemList = "https://photoslibrary.googleapis.com/v1/mediaItems:search"
 
+// PhotoLibraryMedia is the representation of a photo or video in Google Photos.
 type PhotoLibraryMedia struct {
 	ID            string `json:"id,omitempty"`
 	Description   string `json:"description,omitempty"`
@@ -57,22 +58,22 @@ type PhotoLibraryMedia struct {
 	MimeType      string `json:"mimeType,omitempty"`
 	Filename      string `json:"filename,omitempty"`
 	MediaMetadata struct {
-		Width        string `json:"width,omitempty"`
-		Height       string `json:"height,omitempty"`
+		Width        string    `json:"width,omitempty"`
+		Height       string    `json:"height,omitempty"`
 		CreationTime time.Time `json:"creationTime,omitempty"`
 		Photo        struct {
-			CameraMake      string `json:"cameraMake,omitempty"`
-			CameraModel     string `json:"cameraModel,omitempty"`
+			CameraMake      string  `json:"cameraMake,omitempty"`
+			CameraModel     string  `json:"cameraModel,omitempty"`
 			FocalLength     float64 `json:"focalLength,omitempty"`
 			ApertureFNumber float64 `json:"apertureFNumber,omitempty"`
 			IsoEquivalent   float64 `json:"isoEquivalent,omitempty"`
-			ExposureTime    string `json:"exposureTime,omitempty"`
+			ExposureTime    string  `json:"exposureTime,omitempty"`
 		} `json:"photo,omitempty"`
 		Video struct {
-			CameraMake  string `json:"cameraMake,omitempty"`
-			CameraModel string `json:"cameraModel,omitempty"`
+			CameraMake  string  `json:"cameraMake,omitempty"`
+			CameraModel string  `json:"cameraModel,omitempty"`
 			Fps         float64 `json:"fps,omitempty"`
-			Status      string `json:"status,omitempty"`
+			Status      string  `json:"status,omitempty"`
 		} `json:"video,omitempty"`
 	} `json:"mediaMetadata,omitempty"`
 	ContributorInfo struct {
@@ -80,6 +81,22 @@ type PhotoLibraryMedia struct {
 		DisplayName           string `json:"displayName,omitempty"`
 	} `json:"contributorInfo,omitempty"`
 	Location interface{} `json:"location,omitempty"`
+}
+
+func (Ω *PhotoLibraryMedia) Time() time.Time {
+	return Ω.MediaMetadata.CreationTime
+}
+
+// Latitude will return the coordinate of the image.
+// Currently unimplemented as Google does not expose location yet.
+func (Ω *PhotoLibraryMedia) Latitude() float64 {
+	return 0
+}
+
+// Latitude will return the coordinate of the image.
+// Currently unimplemented as Google does not expose location yet.
+func (Ω *PhotoLibraryMedia) Longitude() float64 {
+	return 0
 }
 
 type mediaPageResponse struct {
@@ -116,8 +133,8 @@ func fetchMediaPage(accessToken string, filter *query) (*mediaPageResponse, erro
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"requestBody":    string(filterBytes),
-		"endpoint":  endpointMediaItemList,
+		"requestBody": string(filterBytes),
+		"endpoint":    endpointMediaItemList,
 	}).Debug("Fetching media page")
 
 	req, err := http.NewRequest("POST", endpointMediaItemList, bytes.NewReader(filterBytes))

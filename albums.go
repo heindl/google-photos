@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// Album is the basic unit of organization in Google Photos.
 type Album struct {
 	ID                    string `json:"id"`
 	Title                 string `json:"title"`
@@ -15,9 +16,10 @@ type Album struct {
 	CoverPhotoBaseURL     string `json:"coverPhotoBaseUrl"`
 	CoverPhotoMediaItemID string `json:"coverPhotoMediaItemId"`
 	IsWriteable           bool   `json:"isWriteable"`
-	TotalMediaItems       string    `json:"totalMediaItems"`
+	TotalMediaItems       string `json:"totalMediaItems"`
 }
 
+// Albums represents a list of Album.
 type Albums []*Album
 
 func (Ω Albums) filterToTitles(titles ...string) Albums {

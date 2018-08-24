@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/go-errors/errors"
 	"github.com/heindl/googlephotos"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"encoding/json"
-	"github.com/go-errors/errors"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 			} else {
 				logrus.SetLevel(logrus.WarnLevel)
 			}
-			media, err := googlephotos.List(googlephotos.Params{
+			media, err := googlephotos.FetchList(googlephotos.Params{
 				OAuth2AccessToken: OAuth2AccessToken,
 				AlbumTitles:       AlbumTitles,
 			})

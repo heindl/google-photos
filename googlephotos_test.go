@@ -1,11 +1,11 @@
 package googlephotos
 
 import (
-	"testing"
-	"os"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"strconv"
+	"testing"
 )
 
 func TestMediaFetch(t *testing.T) {
