@@ -80,23 +80,7 @@ type PhotoLibraryMedia struct {
 		ProfilePictureBaseURL string `json:"profilePictureBaseUrl,omitempty"`
 		DisplayName           string `json:"displayName,omitempty"`
 	} `json:"contributorInfo,omitempty"`
-	Location interface{} `json:"location,omitempty"`
-}
-
-func (Ω *PhotoLibraryMedia) Time() time.Time {
-	return Ω.MediaMetadata.CreationTime
-}
-
-// Latitude will return the coordinate of the image.
-// Currently unimplemented as Google does not expose location yet.
-func (Ω *PhotoLibraryMedia) Latitude() float64 {
-	return 0
-}
-
-// Latitude will return the coordinate of the image.
-// Currently unimplemented as Google does not expose location yet.
-func (Ω *PhotoLibraryMedia) Longitude() float64 {
-	return 0
+	Location interface{} `json:"location,omitempty"` // Current not returned by Google Photos
 }
 
 type mediaPageResponse struct {

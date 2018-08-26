@@ -6,6 +6,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/go-playground/validator.v9"
 	"sync"
+	"time"
 )
 
 type Params struct {
@@ -17,22 +18,31 @@ type Params struct {
 
 var validate = validator.New()
 
-type Media struct {
+type Image struct {
 	*PhotoLibraryMedia
 	Albums     Albums     `json:"albums,omitempty"`
 	Categories Categories `json:"categories,omitempty"`
 }
 
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
+
+// Time method created to match external interface.
+func (Ω *Image) Time() *time.Time {
+	return timePtr(Ω.MediaMetadata.CreationTime)
+}
+
 type mediaSet struct {
 	sync.Mutex
-	m map[string]*Media
+	m map[string]*Image
 }
 
 func (Ω *mediaSet) add(media *PhotoLibraryMedia, album *Album, category *Category) {
 	Ω.Lock()
 	defer Ω.Unlock()
 	if _, ok := Ω.m[media.ID]; !ok {
-		Ω.m[media.ID] = &Media{
+		Ω.m[media.ID] = &Image{
 			PhotoLibraryMedia: media,
 			Albums:            Albums{},
 			Categories:        Categories{},
@@ -42,7 +52,7 @@ func (Ω *mediaSet) add(media *PhotoLibraryMedia, album *Album, category *Catego
 	Ω.m[media.ID].Categories = Ω.m[media.ID].Categories.addToSet(category)
 }
 
-func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Media) {
+func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Image) {
 	for _, v := range Ω.m {
 		if requireAlbum && len(v.Albums) == 0 {
 			continue
@@ -53,7 +63,7 @@ func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Media) {
 }
 
 // FetchList returns a list of images from Google Photos.
-func FetchList(params Params) ([]*Media, error) {
+func FetchList(params Params) ([]*Image, error) {
 	if err := validate.Struct(params); err != nil {
 		return nil, errors.Wrap(err, 0)
 	}
@@ -65,7 +75,7 @@ func FetchList(params Params) ([]*Media, error) {
 
 	logrus.WithFields(logrus.Fields{"albums": len(albums)}).Infof("Received album list")
 
-	media := mediaSet{m: map[string]*Media{}}
+	media := mediaSet{m: map[string]*Image{}}
 
 	g := errgroup.Group{}
 	g.Go(func() error {
