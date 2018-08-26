@@ -51,12 +51,20 @@ const endpointMediaItemList = "https://photoslibrary.googleapis.com/v1/mediaItem
 
 // PhotoLibraryMedia is the representation of a photo or video in Google Photos.
 type PhotoLibraryMedia struct {
-	ID            string `json:"id,omitempty"`
-	Description   string `json:"description,omitempty"`
-	ProductURL    string `json:"productUrl,omitempty"`
-	BaseURL       string `json:"baseUrl,omitempty"`
-	MimeType      string `json:"mimeType,omitempty"`
-	Filename      string `json:"filename,omitempty"`
+	// Identifier for the media item. This is a persistent identifier that can be used between sessions to identify this media item.
+	ID string `json:"id,omitempty"`
+	// Description of the media item. This is shown to the user in the item's info section in the Google Photos app.
+	Description string `json:"description,omitempty"`
+	// Google Photos URL for the media item. This link is available to the user only if they're signed in.
+	ProductURL string `json:"productUrl,omitempty"`
+	// A URL to the media item's bytes. This shouldn't be used directly to access the media item.
+	// For example, '=w2048-h1024' will set the dimensions of a media item of type photo to have a width of 2048 px and height of 1024 px.
+	BaseURL string `json:"baseUrl,omitempty"`
+	// MIME type of the media item. For example, image/jpeg.
+	MimeType string `json:"mimeType,omitempty"`
+	// Filename of the media item. This is shown to the user in the item's info section in the Google Photos app.
+	Filename string `json:"filename,omitempty"`
+	// Metadata related to the media item, such as, height, width, or creation time.
 	MediaMetadata struct {
 		Width        string    `json:"width,omitempty"`
 		Height       string    `json:"height,omitempty"`
@@ -76,10 +84,12 @@ type PhotoLibraryMedia struct {
 			Status      string  `json:"status,omitempty"`
 		} `json:"video,omitempty"`
 	} `json:"mediaMetadata,omitempty"`
+	// Information about the user who created this media item.
 	ContributorInfo struct {
 		ProfilePictureBaseURL string `json:"profilePictureBaseUrl,omitempty"`
 		DisplayName           string `json:"displayName,omitempty"`
 	} `json:"contributorInfo,omitempty"`
+	// Not yet available. Location of the media item.
 	Location interface{} `json:"location,omitempty"` // Current not returned by Google Photos
 }
 

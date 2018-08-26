@@ -13,6 +13,7 @@ func main() {
 	var OAuth2AccessToken string
 	var Verbose bool
 	var AlbumTitles []string
+	var DownloadPath string
 
 	var rootCmd = &cobra.Command{
 		Use:   "googlephotos",
@@ -22,6 +23,7 @@ func main() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVarP(&OAuth2AccessToken, "token", "t", "", "Google oauth2 access token")
 	rootCmd.PersistentFlags().StringArrayVarP(&AlbumTitles, "album", "a", []string{}, "Album titles to restrict results")
+	rootCmd.PersistentFlags().StringVarP(&DownloadPath, "downloadpath", "d", "", "Directory in which to download images")
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "list",
@@ -45,6 +47,36 @@ func main() {
 				return errors.Wrap(err, 0)
 			}
 			fmt.Println(string(b))
+			return nil
+		},
+	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "download",
+		Short: "Download selected photos to a directory",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if Verbose {
+				logrus.SetLevel(logrus.DebugLevel)
+				logrus.SetFormatter(&logrus.JSONFormatter{})
+			} else {
+				logrus.SetLevel(logrus.WarnLevel)
+			}
+
+			if DownloadPath == "" {
+				return errors.New("File download path required to save photos")
+			}
+
+			media, err := googlephotos.FetchList(googlephotos.Params{
+				OAuth2AccessToken: OAuth2AccessToken,
+				AlbumTitles:       AlbumTitles,
+			})
+			if err != nil {
+				return err
+			}
+
+			if err := googlephotos.Download(media, DownloadPath); err != nil {
+				return err
+			}
 			return nil
 		},
 	})

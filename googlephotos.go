@@ -1,12 +1,16 @@
 package googlephotos
 
 import (
+	"fmt"
 	"github.com/go-errors/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/go-playground/validator.v9"
+	"io"
+	"net/http"
+	"os"
+	"path"
 	"sync"
-	"time"
 )
 
 type Params struct {
@@ -22,15 +26,6 @@ type Image struct {
 	*PhotoLibraryMedia
 	Albums     Albums     `json:"albums,omitempty"`
 	Categories Categories `json:"categories,omitempty"`
-}
-
-func timePtr(t time.Time) *time.Time {
-	return &t
-}
-
-// Time method created to match external interface.
-func (Ω *Image) Time() *time.Time {
-	return timePtr(Ω.MediaMetadata.CreationTime)
 }
 
 type mediaSet struct {
@@ -60,6 +55,48 @@ func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Image) {
 		res = append(res, v)
 	}
 	return
+}
+
+func Download(list []*Image, filePath string) error {
+
+	if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+		return errors.Wrap(err, 0)
+	}
+	eg := errgroup.Group{}
+	eg.Go(func() error {
+		for _, _img := range list {
+			img := _img
+			eg.Go(func() (resErr error) {
+
+				imgResponse, err := http.Get(img.BaseURL)
+				if err != nil {
+					return errors.Wrap(err, 0)
+				}
+				defer safeClose(imgResponse.Body, &resErr)
+
+				imgFile, err := os.Create(path.Join(filePath, fmt.Sprintf("%s.jpg", img.ID)))
+				if err != nil {
+					return errors.Wrap(err, 0)
+				}
+				defer safeClose(imgFile, &resErr)
+
+				_, err = io.Copy(imgFile, imgResponse.Body)
+				if err != nil {
+					return errors.Wrap(err, 0)
+				}
+
+				return nil
+			})
+		}
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, 0)
+	}
+
+	return nil
+
 }
 
 // FetchList returns a list of images from Google Photos.
