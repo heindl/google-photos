@@ -1,0 +1,9 @@
+checks:
+  extimport:
+    skip: true
+  novendor:
+    skip: true
+  golint:
+    filters:
+    - value: "should have comment or be unexported"
+    - value: "or a comment on this block"

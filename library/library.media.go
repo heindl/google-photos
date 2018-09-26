@@ -1,13 +1,19 @@
-package googlephotos
+// Copyright (c) 2018 Parker Heindl. All rights reserved.
+//
+// Use of this source code is governed by the MIT License.
+// Read LICENSE.md in the project root for information.
+
+package library
 
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/go-errors/errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 type contentFilter struct {
@@ -35,7 +41,7 @@ type filters struct {
 }
 
 type query struct {
-	AlbumId   string   `json:"albumId,omitempty"`
+	AlbumID   string   `json:"albumId,omitempty"`
 	Filters   *filters `json:"filters,omitempty"`
 	PageToken string   `json:"pageToken,omitempty"`
 }
@@ -123,7 +129,7 @@ func fetchMediaPage(accessToken string, filter *query) (*mediaPageResponse, erro
 
 	filterBytes, err := json.Marshal(filter)
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 
 	logrus.WithFields(logrus.Fields{
@@ -133,7 +139,7 @@ func fetchMediaPage(accessToken string, filter *query) (*mediaPageResponse, erro
 
 	req, err := http.NewRequest("POST", endpointMediaItemList, bytes.NewReader(filterBytes))
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 
 	req.Header.Add("Content-type", "application/json")
@@ -142,17 +148,17 @@ func fetchMediaPage(accessToken string, filter *query) (*mediaPageResponse, erro
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 	defer safeClose(resp.Body, &err)
 
 	if resp.StatusCode != 200 {
-		return nil, errors.WrapPrefix("Could not fetch media page", resp.Status, 0)
+		return nil, errors.Errorf("could not fetch media page %s", endpointMediaItemList)
 	}
 
 	res := &mediaPageResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, errors.WrapPrefix(err, "Could not decode media page response", 0)
+		return nil, errors.Wrap(err, "could not decode media page response")
 	}
 	return res, nil
 }

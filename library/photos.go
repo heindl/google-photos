@@ -1,16 +1,22 @@
-package googlephotos
+// Copyright (c) 2018 Parker Heindl. All rights reserved.
+//
+// Use of this source code is governed by the MIT License.
+// Read LICENSE.md in the project root for information.
+
+package library
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
-	"gopkg.in/go-playground/validator.v9"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"sync"
+
+	"github.com/go-playground/validator"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 type Params struct {
@@ -60,7 +66,7 @@ func (Ω *mediaSet) toSlice(requireAlbum bool) (res []*Image) {
 func Download(list []*Image, filePath string) error {
 
 	if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
-		return errors.Wrap(err, 0)
+		return errors.WithStack(err)
 	}
 	eg := errgroup.Group{}
 	eg.Go(func() error {
@@ -70,19 +76,19 @@ func Download(list []*Image, filePath string) error {
 
 				imgResponse, err := http.Get(img.BaseURL)
 				if err != nil {
-					return errors.Wrap(err, 0)
+					return errors.WithStack(err)
 				}
 				defer safeClose(imgResponse.Body, &resErr)
 
 				imgFile, err := os.Create(path.Join(filePath, fmt.Sprintf("%s.jpg", img.ID)))
 				if err != nil {
-					return errors.Wrap(err, 0)
+					return errors.WithStack(err)
 				}
 				defer safeClose(imgFile, &resErr)
 
 				_, err = io.Copy(imgFile, imgResponse.Body)
 				if err != nil {
-					return errors.Wrap(err, 0)
+					return errors.WithStack(err)
 				}
 
 				return nil
@@ -92,7 +98,7 @@ func Download(list []*Image, filePath string) error {
 	})
 
 	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, 0)
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -102,7 +108,7 @@ func Download(list []*Image, filePath string) error {
 // FetchList returns a list of images from Google Photos.
 func FetchList(params Params) ([]*Image, error) {
 	if err := validate.Struct(params); err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 
 	albums, err := fetchAlbums(params.OAuth2AccessToken, params.AlbumTitles...)
@@ -121,7 +127,7 @@ func FetchList(params Params) ([]*Image, error) {
 			album := _album
 			g.Go(func() error {
 				items, err := fetchLibraryMedia(params.OAuth2AccessToken, &query{
-					AlbumId: album.ID,
+					AlbumID: album.ID,
 				})
 
 				logrus.WithFields(logrus.Fields{

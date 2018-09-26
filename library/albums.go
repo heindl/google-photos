@@ -1,11 +1,16 @@
-package googlephotos
+// Copyright (c) 2018 Parker Heindl. All rights reserved.
+//
+// Use of this source code is governed by the MIT License.
+// Read LICENSE.md in the project root for information.
+
+package library
 
 import (
 	"encoding/json"
-	"github.com/go-errors/errors"
-	"github.com/machinae/stringslice"
-	"github.com/sirupsen/logrus"
 	"net/http"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Album is the basic unit of organization in Google Photos.
@@ -16,7 +21,7 @@ type Album struct {
 	CoverPhotoBaseURL     string `json:"coverPhotoBaseUrl"`
 	CoverPhotoMediaItemID string `json:"coverPhotoMediaItemId"`
 	IsWriteable           bool   `json:"isWriteable"`
-	TotalMediaItems       string `json:"totalMediaItems"`
+	MediaItemsCount       string `json:"mediaItemsCount"`
 }
 
 // Albums represents a list of Album.
@@ -26,17 +31,21 @@ func (Ω Albums) filterToTitles(titles ...string) Albums {
 	if len(titles) == 0 {
 		return Ω
 	}
-	res := Albums{}
+	titlM := map[string]struct{}{}
+	for _, t := range titles {
+		titlM[t] = struct{}{}
+	}
+	y := Albums{}
 	for _, album := range Ω {
-		if stringslice.Contains(titles, album.Title) {
-			res = append(res, album)
+		if _, ok := titlM[album.Title]; ok {
+			y = y.addToSet(album)
 		}
 	}
-	return res
+	return y
 }
-func (Ω Albums) contains(albumId string) bool {
+func (Ω Albums) contains(albumID string) bool {
 	for _, a := range Ω {
-		if a.ID == albumId {
+		if a.ID == albumID {
 			return true
 		}
 	}
@@ -84,7 +93,7 @@ func fetchAlbumPage(accessToken string, pageToken string) (*albumResponse, error
 
 	req, err := http.NewRequest("GET", endpointAlbumList, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 
 	q := req.URL.Query()
@@ -96,13 +105,13 @@ func fetchAlbumPage(accessToken string, pageToken string) (*albumResponse, error
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, 0)
+		return nil, errors.WithStack(err)
 	}
 	defer safeClose(resp.Body, &err)
 
 	res := &albumResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, errors.WrapPrefix(err, "Could not decode album response", 0)
+		return nil, errors.Wrap(err, "could not decode album response")
 	}
 	return res, nil
 }
